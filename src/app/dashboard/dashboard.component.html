@@ -1,0 +1,374 @@
+<div class="dashboard-container">
+  <header class="dashboard-header">
+    <div class="header-content">
+      <h1>Vendor Dashboard</h1>
+      <div class="header-actions">
+        <span class="vendor-info">Welcome, {{ vendorId }}</span>
+        <button class="logout-btn" (click)="logout()">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="dashboard-main">
+    <div class="dashboard-content">
+      <!-- Loading State -->
+      <div *ngIf="isLoading" class="loading-container">
+        <div class="loading-spinner">
+          <div class="spinner"></div>
+          <p>Loading vendor information...</p>
+        </div>
+      </div>
+
+      <!-- Error State -->
+      <div *ngIf="errorMessage && !isLoading" class="error-container">
+        <div class="error-message">
+          <h3>Error</h3>
+          <p>{{ errorMessage }}</p>
+          <button class="retry-btn" (click)="loadVendorProfile()">Retry</button>
+        </div>
+      </div>
+
+      <!-- Dashboard Content -->
+      <div *ngIf="!isLoading && !errorMessage" class="dashboard-grid">
+        <!-- Welcome Card -->
+        <div class="welcome-card">
+          <h2>Welcome to Vendor Portal</h2>
+          <p>Access your vendor information, purchase orders, invoices, and more.</p>
+        </div>
+
+        <!-- Vendor Dashboard Card -->
+        <div class="main-card vendor-dashboard-card">
+          <div class="card-header">
+            <h3>
+              <i class="card-icon">📊</i>
+              Vendor Dashboard
+            </h3>
+          </div>
+          <div class="card-content">
+            <div class="subtile-grid">
+              <div class="subtile" (click)="navigateToSection('rfq')">
+                <div class="subtile-icon">📋</div>
+                <div class="subtile-title">Request for Quotation</div>
+                <div class="subtile-description">View and respond to RFQs</div>
+              </div>
+              <div class="subtile" (click)="navigateToSection('po')">
+                <div class="subtile-icon">📦</div>
+                <div class="subtile-title">Purchase Order</div>
+                <div class="subtile-description">Manage purchase orders</div>
+              </div>
+              <div class="subtile" (click)="navigateToSection('gr')">
+                <div class="subtile-icon">📥</div>
+                <div class="subtile-title">Goods Receipt</div>
+                <div class="subtile-description">Track goods receipts</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Vendor Financial Sheet Card -->
+        <div class="main-card vendor-financial-card">
+          <div class="card-header">
+            <h3>
+              <i class="card-icon">💰</i>
+              Vendor Financial Sheet
+            </h3>
+          </div>
+          <div class="card-content">
+            <div class="subtile-grid">
+              <div class="subtile" (click)="navigateToSection('invoice')">
+                <div class="subtile-icon">📄</div>
+                <div class="subtile-title">Invoice Details</div>
+                <div class="subtile-description">View invoice information</div>
+              </div>
+              <div class="subtile" (click)="navigateToSection('payments')">
+                <div class="subtile-icon">💳</div>
+                <div class="subtile-title">Payments and Aging</div>
+                <div class="subtile-description">Track payments and aging</div>
+              </div>
+              <div class="subtile" (click)="navigateToSection('memo')">
+                <div class="subtile-icon">📝</div>
+                <div class="subtile-title">Credit/Debit Memo</div>
+                <div class="subtile-description">Manage credit/debit memos</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Profile Card -->
+        <div class="main-card profile-card" *ngIf="vendorProfile">
+          <div class="card-header">
+            <h3>
+              <i class="card-icon">👤</i>
+              Profile
+            </h3>
+          </div>
+          <div class="card-content">
+            <div class="profile-details">
+              <div class="profile-item">
+                <label>Vendor ID:</label>
+                <span>{{ vendorProfile.vendorId || 'N/A' }}</span>
+              </div>
+              <div class="profile-item">
+                <label>Name:</label>
+                <span>{{ vendorProfile.name || 'N/A' }}</span>
+              </div>
+              <div class="profile-item">
+                <label>City:</label>
+                <span>{{ vendorProfile.city || 'N/A' }}</span>
+              </div>
+              <div class="profile-item">
+                <label>Country:</label>
+                <span>{{ vendorProfile.country || 'N/A' }}</span>
+              </div>
+              <div class="profile-item">
+                <label>Postal Code:</label>
+                <span>{{ vendorProfile.postalCode || 'N/A' }}</span>
+              </div>
+              <div class="profile-item">
+                <label>Street:</label>
+                <span>{{ vendorProfile.street || 'N/A' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Data Modal -->
+  <div class="modal-overlay" *ngIf="showDataModal" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ getSectionTitle(activeSection) }}</h2>
+        <button class="close-btn" (click)="closeModal()">×</button>
+      </div>
+      
+      <div class="modal-body">
+        <!-- Loading State -->
+        <div *ngIf="getSectionLoading(activeSection)" class="loading-container">
+          <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Loading {{ getSectionTitle(activeSection).toLowerCase() }}...</p>
+          </div>
+        </div>
+
+        <!-- RFQ Data -->
+        <div *ngIf="activeSection === 'rfq' && !loadingStates.rfq">
+          <div *ngIf="rfqData.length === 0" class="no-data">
+            <p>No RFQ data available</p>
+          </div>
+          <div *ngIf="rfqData.length > 0" class="data-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>RFQ No</th>
+                  <th>Date</th>
+                  <th>Item</th>
+                  <th>Material</th>
+                  <th>Unit</th>
+                  <th>Description</th>
+                  <th>Doc Type</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let rfq of rfqData">
+                  <td>{{ rfq.rfqNo }}</td>
+                  <td>{{ formatDate(rfq.date) }}</td>
+                  <td>{{ rfq.item }}</td>
+                  <td>{{ rfq.material }}</td>
+                  <td>{{ rfq.unit }}</td>
+                  <td>{{ rfq.description }}</td>
+                  <td>{{ rfq.docType }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Purchase Orders Data -->
+        <div *ngIf="activeSection === 'po' && !loadingStates.po">
+          <div *ngIf="purchaseOrders.length === 0" class="no-data">
+            <p>No purchase orders available</p>
+          </div>
+          <div *ngIf="purchaseOrders.length > 0" class="data-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>PO Number</th>
+                  <th>Item</th>
+                  <th>Material</th>
+                  <th>Unit</th>
+                  <th>Quantity</th>
+                  <th>Net Price</th>
+                  <th>Description</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let po of purchaseOrders">
+                  <td>{{ po.ebeln }}</td>
+                  <td>{{ po.ebelp }}</td>
+                  <td>{{ po.matnr }}</td>
+                  <td>{{ po.meins }}</td>
+                  <td>{{ po.menge || 'N/A' }}</td>
+                  <td>{{ po.netwr || 'N/A' }}</td>
+                  <td>{{ po.txz01 }}</td>
+                  <td>{{ formatDate(po.bedat) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Goods Receipts Data -->
+        <div *ngIf="activeSection === 'gr' && !loadingStates.gr">
+          <div *ngIf="goodsReceipts.length === 0" class="no-data">
+            <p>No goods receipts available</p>
+          </div>
+          <div *ngIf="goodsReceipts.length > 0" class="data-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>PO Number</th>
+                  <th>Item</th>
+                  <th>Material</th>
+                  <th>Unit</th>
+                  <th>Quantity</th>
+                  <th>Material Doc</th>
+                  <th>Year</th>
+                  <th>Entry Date</th>
+                  <th>Posting Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let gr of goodsReceipts">
+                  <td>{{ gr.ebeln }}</td>
+                  <td>{{ gr.ebelp }}</td>
+                  <td>{{ gr.matnr }}</td>
+                  <td>{{ gr.meins }}</td>
+                  <td>{{ gr.menge || 'N/A' }}</td>
+                  <td>{{ gr.mblnr }}</td>
+                  <td>{{ gr.mjahr }}</td>
+                  <td>{{ formatDate(gr.cpudt) }}</td>
+                  <td>{{ formatDate(gr.budat) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Invoice Data -->
+        <div *ngIf="activeSection === 'invoice' && !loadingStates.invoice">
+          <div *ngIf="invoiceList.length === 0" class="no-data">
+            <p>No invoices available</p>
+          </div>
+          <div *ngIf="invoiceList.length > 0" class="data-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Document Number</th>
+                  <th>Posting Date</th>
+                  <th>Currency</th>
+                  <th>Amount</th>
+                  <th>Fiscal Year</th>
+                  <th>Invoice Form</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let invoice of invoiceList">
+                  <td>{{ invoice.belnrD }}</td>
+                  <td>{{ formatDate(invoice.budat) }}</td>
+                  <td>{{ invoice.waers }}</td>
+                  <td>{{ formatCurrency(invoice.wrbtr, invoice.waers) }}</td>
+                  <td>{{ invoice.gjahr }}</td>
+                  <td class="action-buttons-cell">
+                    <button 
+                      class="action-btn preview-btn" 
+                      (click)="viewInvoiceForm(invoice.belnrD)"
+                      title="Preview Invoice Form">
+                      👁️ Preview
+                    </button>
+                    <button 
+                      class="action-btn download-btn" 
+                      (click)="downloadInvoiceForm(invoice.belnrD)"
+                      title="Download Invoice Form">
+                      📥 Download
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Payments and Aging Data -->
+        <div *ngIf="activeSection === 'payments' && !loadingStates.payments">
+          <div *ngIf="paymentsAndAging.length === 0" class="no-data">
+            <p>No payments and aging data available</p>
+          </div>
+          <div *ngIf="paymentsAndAging.length > 0" class="data-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Document Number</th>
+                  <th>Posting Date</th>
+                  <th>Entry Date</th>
+                  <th>Due Date</th>
+                  <th>Amount</th>
+                  <th>Currency</th>
+                  <th>Aging Days</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let payment of paymentsAndAging">
+                  <td>{{ payment.belnrD }}</td>
+                  <td>{{ formatDate(payment.budat) }}</td>
+                  <td>{{ formatDate(payment.cpudt) }}</td>
+                  <td>{{ formatDate(payment.dzfbdt) }}</td>
+                  <td>{{ formatCurrency(payment.dmbtr, payment.waers) }}</td>
+                  <td>{{ payment.waers }}</td>
+                  <td>{{ payment.aging }} days</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Credit/Debit Memo Data -->
+        <div *ngIf="activeSection === 'memo' && !loadingStates.memo">
+          <div *ngIf="creditDebitMemos.length === 0" class="no-data">
+            <p>No credit/debit memos available</p>
+          </div>
+          <div *ngIf="creditDebitMemos.length > 0" class="data-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Document Number</th>
+                  <th>Posting Date</th>
+                  <th>Entry Date</th>
+                  <th>Document Type</th>
+                  <th>Amount</th>
+                  <th>Currency</th>
+                  <th>Company Code</th>
+                  <th>Debit/Credit</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let memo of creditDebitMemos">
+                  <td>{{ memo.belnrD }}</td>
+                  <td>{{ formatDate(memo.budat) }}</td>
+                  <td>{{ formatDate(memo.cpudt) }}</td>
+                  <td>{{ memo.blart }}</td>
+                  <td>{{ formatCurrency(memo.dmbtr, memo.waers) }}</td>
+                  <td>{{ memo.waers }}</td>
+                  <td>{{ memo.bukrs }}</td>
+                  <td>{{ memo.shkzg === 'H' ? 'Credit' : 'Debit' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

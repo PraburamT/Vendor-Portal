@@ -1,0 +1,51 @@
+<div class="login-container">
+  <div class="login-card">
+    <div class="login-header">
+      <h2>Vendor Login</h2>
+      <p>Please enter your credentials to access the vendor portal</p>
+    </div>
+    
+    <form (ngSubmit)="onLogin()" class="login-form">
+      <div class="form-group">
+        <label for="vendorId">Vendor ID</label>
+        <input 
+          type="text" 
+          id="vendorId" 
+          [(ngModel)]="vendorId" 
+          name="vendorId"
+          placeholder="Enter your Vendor ID"
+          required
+          [disabled]="isLoading"
+        >
+      </div>
+      
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input 
+          type="password" 
+          id="password" 
+          [(ngModel)]="password" 
+          name="password"
+          placeholder="Enter your password"
+          required
+          [disabled]="isLoading"
+        >
+      </div>
+      
+      <div class="error-message" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+      
+      <button 
+        type="submit" 
+        class="login-btn"
+        [disabled]="isLoading"
+      >
+        <span *ngIf="!isLoading">Login</span>
+        <span *ngIf="isLoading" class="loading-spinner">
+          <i class="spinner"></i> Logging in...
+        </span>
+      </button>
+    </form>
+  </div>
+</div>
